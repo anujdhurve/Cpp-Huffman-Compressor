@@ -18,11 +18,9 @@ private:
     bool eof_flag_;
 
 public:
-    
     BitStream(ostream& out)
         : out_(&out), in_(nullptr), is_writer_(true), buffer_(0), bit_pos_(0), eof_flag_(false) {}
 
-    
     BitStream(istream& in)
         : out_(nullptr), in_(&in), is_writer_(false), buffer_(0), bit_pos_(8), eof_flag_(false) {}
 
