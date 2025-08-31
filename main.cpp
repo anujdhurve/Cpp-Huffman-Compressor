@@ -8,11 +8,6 @@
 
 using namespace std;
 
-// ---------------------------
-// BitStream class for bit-level I/O
-// ---------------------------
-// This class handles writing and reading individual bits to a stream.
-// It uses an internal buffer to pack/unpack bits into full bytes.
 class BitStream {
 private:
     ostream* out_;
@@ -23,15 +18,15 @@ private:
     bool eof_flag_;
 
 public:
-    // Writer constructor: Initializes for writing to an ostream.
+    
     BitStream(ostream& out)
         : out_(&out), in_(nullptr), is_writer_(true), buffer_(0), bit_pos_(0), eof_flag_(false) {}
 
-    // Reader constructor: Initializes for reading from an istream.
+    
     BitStream(istream& in)
         : out_(nullptr), in_(&in), is_writer_(false), buffer_(0), bit_pos_(8), eof_flag_(false) {}
 
-    // Writes a single bit to the stream.
+   
     void writeBit(bool bit) {
         if (!is_writer_) return;
         buffer_ <<= 1;
@@ -44,14 +39,13 @@ public:
         }
     }
 
-    // Writes a full byte (8 bits) to the stream.
+ 
     void writeByte(uint8_t byte) {
         if (is_writer_) {
             if (bit_pos_ == 0) {
                 out_->put(byte);
             } else {
-                // This handles cases where we are not on a byte boundary.
-                // It's a bit more complex, but we can write the byte bit by bit to be safe.
+               
                 for (int i = 7; i >= 0; --i) {
                     writeBit((byte >> i) & 1);
                 }
@@ -59,7 +53,6 @@ public:
         }
     }
 
-    // Reads a single bit from the stream.
     bool readBit() {
         if (is_writer_ || eof_flag_) return false;
         if (bit_pos_ == 8) {
@@ -74,7 +67,7 @@ public:
         return bit;
     }
     
-    // Reads a full byte (8 bits) from the stream.
+    
     uint8_t readByte() {
         uint8_t byte = 0;
         for (int i = 0; i < 8; ++i) {
@@ -87,7 +80,7 @@ public:
         return byte;
     }
 
-    // Flushes any remaining bits in the buffer to the stream.
+   
     void flush() {
         if (is_writer_ && bit_pos_ > 0) {
             buffer_ <<= (8 - bit_pos_);
@@ -100,11 +93,7 @@ public:
     bool eof() const { return eof_flag_; }
 };
 
-// ---------------------------
-// Node structure with a destructor
-// ---------------------------
-// The destructor is commented out to avoid stack overflow issues on large trees.
-// A separate `deleteTree` function is provided for proper memory management.
+
 struct Node {
     char data;
     int freq;
@@ -114,7 +103,6 @@ struct Node {
     Node(char d = '\0', int f = 0) : data(d), freq(f), left(nullptr), right(nullptr) {}
 };
 
-// Function to properly delete the Huffman tree to prevent memory leaks.
 void deleteTree(Node* node) {
     if (node) {
         deleteTree(node->left);
@@ -131,9 +119,7 @@ struct CompareNode {
 
 map<char, string> huffman_codes;
 
-// ---------------------------
-// Huffman Tree Construction
-// ---------------------------
+
 Node* buildHuffmanTree(map<char, int>& freq_map) {
     priority_queue<Node*, vector<Node*>, CompareNode> pq;
 
@@ -156,9 +142,7 @@ Node* buildHuffmanTree(map<char, int>& freq_map) {
     return pq.top();
 }
 
-// ---------------------------
-// Generate Huffman codes
-// ---------------------------
+
 void generateCodes(Node* root, string code) {
     if (!root) return;
 
@@ -171,11 +155,7 @@ void generateCodes(Node* root, string code) {
     generateCodes(root->right, code + "1");
 }
 
-// ---------------------------
-// Write Codebook (Corrected)
-// ---------------------------
-// This function now uses the BitStream exclusively to write the codebook data,
-// ensuring synchronization.
+
 void writeCodebook(BitStream& bit_writer, const map<char, string>& codes) {
     uint16_t size = codes.size();
     bit_writer.writeByte((size >> 8) & 0xFF);
@@ -195,11 +175,7 @@ void writeCodebook(BitStream& bit_writer, const map<char, string>& codes) {
     }
 }
 
-// ---------------------------
-// Read Codebook and build Tree (Corrected)
-// ---------------------------
-// This function now uses the BitStream exclusively to read the codebook data,
-// ensuring synchronization.
+
 Node* readCodebookAndBuildTree(BitStream& bit_reader) {
     Node* root = new Node();
     uint16_t size;
@@ -230,9 +206,7 @@ Node* readCodebookAndBuildTree(BitStream& bit_reader) {
     return root;
 }
 
-// ---------------------------
-// Compression
-// ---------------------------
+
 void writeCompressedData(ifstream& input_file, BitStream& bit_writer, const map<char, string>& codes) {
     char ch;
     input_file.clear();
@@ -247,16 +221,14 @@ void writeCompressedData(ifstream& input_file, BitStream& bit_writer, const map<
     bit_writer.flush();
 }
 
-// ---------------------------
-// Decompression
-// ---------------------------
+
 void decodeData(Node* root, BitStream& bit_reader, ofstream& decompressed_output, long long original_size) {
     Node* curr = root;
 
     long long decoded_count = 0;
     while (decoded_count < original_size) {
         bool bit = bit_reader.readBit();
-        if (bit_reader.eof()) break; // Safeguard against reaching end of file prematurely
+        if (bit_reader.eof()) break; 
         
         curr = bit ? curr->right : curr->left;
 
@@ -268,11 +240,9 @@ void decodeData(Node* root, BitStream& bit_reader, ofstream& decompressed_output
     }
 }
 
-// ---------------------------
-// Main
-// ---------------------------
+
 int main() {
-    // --- Compression ---
+    
     cout << "Starting compression..." << endl;
     ifstream input_file("input.txt", ios::binary);
     if (!input_file.is_open()) {
@@ -302,7 +272,7 @@ int main() {
     }
     generateCodes(root, "");
 
-    // Print Huffman codes
+
     cout << "Huffman Codes:" << endl;
     for (auto& [ch, code] : huffman_codes) {
         if (ch >= 32 && ch <= 126)
@@ -318,17 +288,17 @@ int main() {
         return 1;
     }
 
-    // Write original character count at the beginning of the file.
+   
     compressed_file.write(reinterpret_cast<const char*>(&char_count), sizeof(long long));
 
-    // Now, create the BitStream writer for the rest of the operations.
+  
     BitStream bit_writer(compressed_file);
 
-    // Write the codebook using the BitStream writer.
+   
     writeCodebook(bit_writer, huffman_codes);
-    bit_writer.flush(); // Ensure codebook is fully written before moving on.
+    bit_writer.flush(); 
 
-    // Write the compressed data using the same BitStream writer.
+    
     writeCompressedData(input_file, bit_writer, huffman_codes);
 
     input_file.close();
@@ -336,7 +306,7 @@ int main() {
     cout << "Compression complete! Output written to output.bin" << endl;
     deleteTree(root);
 
-    // --- Decompression ---
+    
     cout << "\nStarting decompression..." << endl;
     ifstream compressed_input("output.bin", ios::binary);
     ofstream decompressed_output("decompressed.txt", ios::binary);
@@ -349,13 +319,13 @@ int main() {
     long long original_size;
     compressed_input.read(reinterpret_cast<char*>(&original_size), sizeof(long long));
 
-    // Now, create the BitStream reader for the rest of the operations.
+    
     BitStream bit_reader(compressed_input);
 
-    // Read the codebook using the BitStream reader.
+   
     Node* decode_root = readCodebookAndBuildTree(bit_reader);
     
-    // Decode the data using the same BitStream reader.
+   
     decodeData(decode_root, bit_reader, decompressed_output, original_size);
 
     compressed_input.close();
