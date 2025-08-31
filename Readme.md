@@ -1,4 +1,4 @@
-Project Name (e.g., Cpp-Huffman-Compressor)
+# Cpp-Huffman-Compressor
 A simple and efficient command-line utility for lossless file compression and decompression. This project implements the classic Huffman coding algorithm to encode data using variable-length codes, resulting in significant file size reduction for text-based content.
 
 Features
